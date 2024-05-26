@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/authentication/startup_screen.dart';
 
-void main() {
+void main()  {
   runApp(const MyApp());
 }
 

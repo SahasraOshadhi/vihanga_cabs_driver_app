@@ -1,7 +1,20 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/authentication/startup_screen.dart';
 
-void main()  {
+Future <void> main  () async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+      options: FirebaseOptions(
+        apiKey: 'key',
+        appId: 'id',
+        messagingSenderId: 'sendid',
+        projectId: 'myapp',
+        storageBucket: 'vihanga-cabs-flutter-app.appspot.com',
+      )
+  );
+
   runApp(const MyApp());
 }
 

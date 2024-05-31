@@ -4,10 +4,13 @@ import 'package:vihanga_cabs_driver_app/authentication/Login/login_screen.dart';
 import 'package:vihanga_cabs_driver_app/authentication/signup/signup_screen_vehicle.dart';
 import 'package:vihanga_cabs_driver_app/methods/common_methods.dart';
 import '../image_picker_page.dart';
+import 'package:vihanga_cabs_driver_app/models/driver_data.dart';
 
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final DriverData driverData;
+
+  const SignUpScreen({super.key, required this.driverData});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -22,6 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   TextEditingController provinceAddressTextEditingController = TextEditingController();
   TextEditingController cityAddressTextEditingController = TextEditingController();
   TextEditingController telNumTextEditingController = TextEditingController();
+  TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController dobTextEditingController = TextEditingController();
   TextEditingController nicTextEditingController = TextEditingController();
   TextEditingController nicPicFrontController = TextEditingController();
@@ -30,6 +34,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
   TextEditingController licensePicFrontController = TextEditingController();
   TextEditingController licensePicBackController = TextEditingController();
   TextEditingController selfPicController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers with data from driverData if available
+    firstNameTextEditingController.text = widget.driverData.firstName ?? '';
+    lastNameTextEditingController.text = widget.driverData.lastName ?? '';
+    houseNumAddressTextEditingController.text = widget.driverData.houseNumAddress ?? '';
+    provinceAddressTextEditingController.text = widget.driverData.provinceAddress ?? '';
+    cityAddressTextEditingController.text = widget.driverData.cityAddress ?? '';
+    telNumTextEditingController.text = widget.driverData.telNum ?? '';
+    emailTextEditingController.text = widget.driverData.email ?? '';
+    dobTextEditingController.text = widget.driverData.dob ?? '';
+    nicTextEditingController.text = widget.driverData.nic ?? '';
+    nicPicFrontController.text = widget.driverData.nicPicFront ?? '';
+    nicPicBackController.text = widget.driverData.nicPicBack ?? '';
+    licenceNumTextEditingController.text = widget.driverData.licenceNum ?? '';
+    licensePicFrontController.text = widget.driverData.licensePicFront ?? '';
+    licensePicBackController.text = widget.driverData.licensePicBack ?? '';
+    selfPicController.text = widget.driverData.selfPic ?? '';
+  }
 
 
   String? _errorText = '' ;
@@ -51,6 +76,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       });
     }
   }
+
+  bool isValidEmail(String email) {
+    String emailPattern = r'^[a-zA-Z0-9.a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*$';
+    RegExp regex = RegExp(emailPattern);
+    return regex.hasMatch(email);
+  }
+
 
   Future<bool> checkIfNetworkIsAvailable(BuildContext context) async {
     bool isConnected = await commonMethods.checkConnectivity(context);
@@ -87,6 +119,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     return true;
+  }
+
+  // Callback function to handle image upload
+  void _onImageUploaded(String imageUrl, String fieldName) {
+    setState(() {
+      switch (fieldName) {
+        case 'nicPicFront':
+          widget.driverData.nicPicFront = imageUrl;
+          break;
+        case 'nicPicBack':
+          widget.driverData.nicPicBack = imageUrl;
+          break;
+        case 'licensePicFront':
+          widget.driverData.licensePicFront = imageUrl;
+          break;
+        case 'licensePicBack':
+          widget.driverData.licensePicBack = imageUrl;
+          break;
+        case 'selfPic':
+          widget.driverData.selfPic = imageUrl;
+          break;
+      }
+    });
   }
 
 
@@ -222,6 +277,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(height: 22,),
 
                     TextField(
+                      controller: emailTextEditingController,
+                      keyboardType: TextInputType.text,
+                      decoration: const InputDecoration(
+                        labelText: "E-mail",
+                        labelStyle: TextStyle(
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 15,
+                      ),
+                    ),
+
+                    const SizedBox(height: 22,),
+
+                    TextField(
                           controller: dobTextEditingController,
                           decoration: InputDecoration(
                             labelText: "Date of Birth",
@@ -272,6 +344,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: nicPicFrontController,
                       labelText: 'Front Picture of NIC',
                       helperText: "Rename the picture as 'NIC_Front'",
+                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'nicPicFront'),
+                      driverEmail: emailTextEditingController.text,
                     ),
 
                     const SizedBox(height: 22,),
@@ -280,6 +354,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: nicPicBackController,
                       labelText: 'Back Picture of NIC',
                       helperText: "Rename the picture as 'NIC_Back'",
+                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'nicPicBack'),
+                      driverEmail: emailTextEditingController.text,
                     ),
 
                     const SizedBox(height: 22,),
@@ -314,6 +390,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: licensePicFrontController,
                       labelText: 'Front Picture of License',
                       helperText: "Rename the picture as 'License_Front'",
+                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'licensePicFront'),
+                      driverEmail: emailTextEditingController.text,
                     ),
 
                     const SizedBox(height: 22,),
@@ -322,6 +400,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: licensePicBackController,
                       labelText: 'Back Picture of License',
                       helperText: "Rename the picture as 'License_Back'",
+                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'licensePicBack'),
+                      driverEmail: emailTextEditingController.text,
                     ),
 
                     const SizedBox(height: 22,),
@@ -331,6 +411,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: selfPicController,
                       labelText: 'Picture of Yourself',
                       helperText: "Rename the picture with your first name.",
+                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'selfPic'),
+                      driverEmail: emailTextEditingController.text,
                     ),
 
                     const SizedBox(height: 22,),
@@ -341,14 +423,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     ElevatedButton(
                         onPressed: () async {
-                          print("Button pressed");
+                          // Validate email format
+                          String email = emailTextEditingController.text;
+                          if (!isValidEmail(email)) {
+                            setState(() {
+                              _errorText = "The email address is badly formatted.";
+                            });
+                            return;
+                          }
+
 
                           bool isReadyToNavigate = await checkIfNetworkIsAvailable(context);
-                          print("Network and form validation result: $isReadyToNavigate");
+
 
                           if (isReadyToNavigate) {
-                            print("Navigating to SignUpVehicle");
-                            Navigator.push(context, MaterialPageRoute(builder: (c) => SignupVehicle()));
+
+                            widget.driverData.firstName = firstNameTextEditingController.text;
+                            widget.driverData.lastName = lastNameTextEditingController.text;
+                            widget.driverData.houseNumAddress = houseNumAddressTextEditingController.text;
+                            widget.driverData.provinceAddress = provinceAddressTextEditingController.text;
+                            widget.driverData.cityAddress = cityAddressTextEditingController.text;
+                            widget.driverData.telNum = telNumTextEditingController.text;
+                            widget.driverData.email = emailTextEditingController.text;
+                            widget.driverData.dob = dobTextEditingController.text;
+                            widget.driverData.nic = nicTextEditingController.text;
+                            widget.driverData.nicPicFront = nicPicFrontController.text;
+                            widget.driverData.nicPicBack = nicPicBackController.text;
+                            widget.driverData.licenceNum = licenceNumTextEditingController.text;
+                            widget.driverData.licensePicFront = licensePicFrontController.text;
+                            widget.driverData.licensePicBack = licensePicBackController.text;
+                            widget.driverData.selfPic = selfPicController.text;
+
+
+
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => SignupVehicle(driverData: widget.driverData),),);
+
                           }
                         },
 

@@ -1,14 +1,23 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/methods/common_methods.dart';
+import 'package:vihanga_cabs_driver_app/models/driver_data.dart';
+import 'package:vihanga_cabs_driver_app/pages/home_page.dart';
+import 'package:vihanga_cabs_driver_app/widgets/loading_dialog.dart';
 
 class SignupFinal extends StatefulWidget {
-  const SignupFinal({super.key});
+  final DriverData driverData;
+
+  const SignupFinal({super.key, required this.driverData});
 
   @override
   State<SignupFinal> createState() => _SignupFinalState();
 }
 
 class _SignupFinalState extends State<SignupFinal> {
+
+  bool _isLoading = false;
 
   String? _errorTextUsername;
   String? _errorTextPassword;
@@ -17,6 +26,13 @@ class _SignupFinalState extends State<SignupFinal> {
   TextEditingController userNameTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
   TextEditingController confirmPasswordTextEditingController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    userNameTextEditingController.text = widget.driverData.userName ?? '';
+    confirmPasswordTextEditingController.text = widget.driverData.password ?? '';
+  }
 
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
@@ -39,6 +55,21 @@ class _SignupFinalState extends State<SignupFinal> {
       return false;
     }
 
+    if (!_isValidUsername(userNameTextEditingController.text)) {
+      commonMethods.displaySnackBar("Username must be at least 6 characters long.", context);
+      return false;
+    }
+
+    if (!_isValidPassword(passwordTextEditingController.text)) {
+      commonMethods.displaySnackBar("Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.", context);
+      return false;
+    }
+
+    if (!_isPasswordMatching(passwordTextEditingController.text, confirmPasswordTextEditingController.text)) {
+      commonMethods.displaySnackBar("Passwords do not match.", context);
+      return false;
+    }
+
     return true;
   }
 
@@ -57,6 +88,89 @@ class _SignupFinalState extends State<SignupFinal> {
 
   bool _isPasswordMatching(String password, String confirmPassword) {
     return password == confirmPassword;
+  }
+
+  Future<void> registerNewDriver() async
+  {
+    widget.driverData.userName = userNameTextEditingController.text;
+    widget.driverData.password = confirmPasswordTextEditingController.text;
+
+    if (widget.driverData.email == null || widget.driverData.password == null) {
+      Navigator.pop(context);
+      commonMethods.displaySnackBar("Email or Password is missing", context);
+      return;
+    }
+
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext) => LoadingDialog(messageText: "Registering your account. This might take some time...." )
+    );
+
+
+    try {
+      final User? driverFirebase = (
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: widget.driverData.email.toString(),
+            password: widget.driverData.password.toString(),
+          ).catchError((errorMsg) {
+            Navigator.pop(context); // Dismiss the loading dialog
+            commonMethods.displaySnackBar(errorMsg.toString(), context);
+            return null; // Return null to handle the error properly
+          })
+      ).user;
+
+      if (driverFirebase != null) {
+        DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("drivers").child(driverFirebase.uid);
+
+        Map<String, String> driverDataMap = {
+          "firstName": widget.driverData.firstName!,
+          "lastName": widget.driverData.lastName!,
+          "houseNumAddress": widget.driverData.houseNumAddress!,
+          "provinceAddress": widget.driverData.provinceAddress!,
+          "cityAddress": widget.driverData.cityAddress!,
+          "telNum": widget.driverData.telNum!,
+          "email": widget.driverData.email!,
+          "dob": widget.driverData.dob!,
+          "nic": widget.driverData.nic!,
+          "nicPicFront": widget.driverData.nicPicFront!,
+          "nicPicBack": widget.driverData.nicPicBack!,
+          "licenceNum": widget.driverData.licenceNum!,
+          "licensePicFront": widget.driverData.licensePicFront!,
+          "licensePicBack": widget.driverData.licensePicBack!,
+          "selfPic": widget.driverData.selfPic!,
+          "vehicleModel": widget.driverData.vehicleModel!,
+          "vehicleInsidePic": widget.driverData.vehicleInsidePic!,
+          "vehicleOutsidePic": widget.driverData.vehicleOutsidePic!,
+          "vehicleRegNum": widget.driverData.vehicleRegNum!,
+          "manufacturedYear": widget.driverData.manufacturedYear!,
+          "lastServiceDate": widget.driverData.lastServiceDate!,
+          "mileage": widget.driverData.mileage!,
+          "emissionTest": widget.driverData.emissionTest!,
+          "userName": widget.driverData.userName!,
+          "password": widget.driverData.password!,
+          "id": driverFirebase.uid,
+          "blockStatus": "no"
+        };
+
+        await driversRef.set(driverDataMap);
+
+        // Save the username and email in the usernames node
+        DatabaseReference usernamesRef = FirebaseDatabase.instance.ref().child("usernames").child(widget.driverData.userName!);
+        await usernamesRef.set(widget.driverData.email);
+
+        Navigator.pop(context); // Dismiss the loading dialog
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => HomePage()));
+      } else {
+        Navigator.pop(context); // Dismiss the loading dialog if registration fails
+        commonMethods.displaySnackBar("Registration failed. Please try again.", context);
+      }
+    } catch (e) {
+      Navigator.pop(context); // Dismiss the loading dialog
+      commonMethods.displaySnackBar(e.toString(), context);
+    }
+
+
   }
 
 
@@ -193,7 +307,7 @@ class _SignupFinalState extends State<SignupFinal> {
                             bool formIsValid = checkFormValidation(context);
 
                             if (isConnected && formIsValid) {
-                              //update here
+                              registerNewDriver();
                             }
                           },
 

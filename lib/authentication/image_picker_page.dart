@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -6,11 +9,16 @@ class ImagePickerTextField extends StatefulWidget {
   final TextEditingController controller;
   final String labelText;
   final String helperText;
+  final Function(String) onImageUploaded;
+  final String driverEmail;
 
   const ImagePickerTextField({
     required this.controller,
     required this.labelText,
-    required this.helperText
+    required this.helperText,
+    required this.onImageUploaded,
+    required this.driverEmail,
+
   });
 
   @override
@@ -20,6 +28,8 @@ class ImagePickerTextField extends StatefulWidget {
 class _ImagePickerTextFieldState extends State<ImagePickerTextField> {
   XFile? _imageFile;
   final picker = ImagePicker();
+  String imageUrl = '';
+
 
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -31,6 +41,32 @@ class _ImagePickerTextFieldState extends State<ImagePickerTextField> {
 
       // Extract file name from the path
       String? fileName = pickedFile.path.split('/').last;
+
+      // URL encode the driver's email to make it safe for use in the path
+      String encodedEmail = Uri.encodeComponent(widget.driverEmail);
+
+      //Get a reference to storage root
+      Reference referenceRoot = FirebaseStorage.instance.ref();
+      Reference referenceDirImages = referenceRoot.child('images').child(encodedEmail);
+      
+      //Create a reference for the image to be stored
+      Reference referenceImageToUpload = referenceDirImages.child(fileName);
+
+      //Handle error/success
+      try{
+        //Store the file
+        await referenceImageToUpload.putFile(File(pickedFile.path));
+
+        //Success: get the download url
+        imageUrl = await referenceImageToUpload.getDownloadURL();
+
+        // Call the callback with the imageUrl
+        widget.onImageUploaded(imageUrl);
+
+      }catch(error){
+        print(error);
+      }
+
 
       // Update the text field with the file name
       widget.controller.text = fileName;

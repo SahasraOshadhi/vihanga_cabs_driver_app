@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,18 +11,114 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref().child(
+      'drivers');
+
+  late Future<Map<String, dynamic>> _userData;
+
+  @override
+  void initState() {
+    super.initState();
+    _userData = _fetchUserData();
+  }
+
+  Future<Map<String, dynamic>> _fetchUserData() async {
+    final User? user = _auth.currentUser;
+    if (user != null) {
+      final DatabaseReference userRef = _databaseRef.child(user.uid);
+
+      DataSnapshot snapshot = await userRef.get();
+      if (snapshot.exists) {
+        final Map<dynamic, dynamic> data = snapshot.value as Map;
+        final String firstName = data['firstName'] ?? '';
+        final String lastName = data['lastName'] ?? '';
+        final String imageUrl = data['selfPic'] ?? ''; // Fetch the selfPic URL
+
+        return {
+          'firstName': firstName,
+          'lastName': lastName,
+          'imageUrl': imageUrl,
+        };
+      } else {
+        print('No user data found for the provided UID.');
+      }
+    } else {
+      print('User is not logged in.');
+    }
+    return {};
+  }
+
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return Scaffold(
       drawer: NavBar(),
       appBar: AppBar(
-        title: Text('Requests'),
+        title: const Text('Requests'),
       ),
-      body: Center(
-        child: Text(
-          "Home Page",
-          style: TextStyle(fontSize: 20, color: Colors.black87),
+      body: SafeArea(
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _userData,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(
+                  child: Text('Error fetching user data: ${snapshot.error}'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text('No user data available'));
+            } else {
+              final Map<String, dynamic> userData = snapshot.data!;
+              final String fullName = '${userData['firstName']} ${userData['lastName']}';
+              final String imageUrl = userData['imageUrl'];
 
+              return Column(
+                children: [
+                  const SizedBox(height: 8), // Add padding below AppBar
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.lightBlue,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipOval(
+                            child: Image.network(
+                              imageUrl,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              fullName,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Add other widgets for the home page below
+                ],
+              );
+            }
+          },
         ),
       ),
     );

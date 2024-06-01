@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/authentication/Login/login_screen.dart';
+import 'package:vihanga_cabs_driver_app/pages/home_page.dart';
 
 class NavBar extends StatelessWidget {
   const NavBar({super.key});
@@ -9,6 +10,12 @@ class NavBar extends StatelessWidget {
 
     // Navigate to the login screen
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LogInScreen()),
+    );
+  }
+
+  void _goToHomePage(BuildContext context) {
+    // Navigate to the home page
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()),
     );
   }
 
@@ -31,7 +38,7 @@ class NavBar extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.notifications),
             title: Text('Requests'),
-            onTap: () => null,
+            onTap: () => _goToHomePage(context),
             trailing: ClipOval(
               child: Container(
                 color: Colors.red,

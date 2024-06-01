@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
 import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:intl/intl.dart';
-import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class CompletedRides extends StatefulWidget {
+  const CompletedRides({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<CompletedRides> createState() => _CompletedRidesState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _CompletedRidesState extends State<CompletedRides> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref().child('drivers');
 
@@ -57,26 +56,28 @@ class _HomePageState extends State<HomePage> {
     // For demonstration, we use static data here
     return [
       {
+        'customerName': 'John Doe',
+        'companyName': 'ABC Corp',
         'date': '15/06/2024',
         'time': '13:30 PM',
         'destination': 'Location A',
-        'customerName': 'John Doe',
-        'companyName': 'ABC Corp',
         'pickUp': 'Location X',
         'stops': 'None',
         'passengers': '3',
-        'estimatedKm': '15',
+        'distance': '15 km',
+        'commission': '50',
       },
       {
+        'customerName': 'Jane Smith',
+        'companyName': 'XYZ Ltd',
         'date': '16/06/2024',
         'time': '14:30 PM',
         'destination': 'Location B',
-        'customerName': 'Jane Smith',
-        'companyName': 'XYZ Ltd',
         'pickUp': 'Location Y',
         'stops': 'Stop 1, Stop 2',
         'passengers': '2',
-        'estimatedKm': '20',
+        'distance': '20 km',
+        'commission': '60',
       },
       // Add more static rides here
     ];
@@ -93,68 +94,85 @@ class _HomePageState extends State<HomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Customer Name:'),
+                    Spacer(),
                     Text(ride['customerName']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Company Name:'),
+                    Spacer(),
                     Text(ride['companyName']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Date:'),
+                    Spacer(),
                     Text(ride['date']),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+                Row(
+                  children: [
                     Text('Time:'),
+                    Spacer(),
                     Text(ride['time']),
                   ],
                 ),
+
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Destination:'),
+                    Spacer(),
                     Text(ride['destination']),
                   ],
                 ),
+
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Pick up:'),
+                    Spacer(),
                     Text(ride['pickUp']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Stops:'),
+                    Spacer(),
                     Text(ride['stops']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('No. of passengers:'),
+                    Spacer(),
                     Text(ride['passengers']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Estimated km:'),
-                    Text(ride['estimatedKm']),
+                    Text('Distance:'),
+                    Spacer(),
+                    Text(ride['distance']),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Text('Commission:'),
+                    Spacer(),
+                    Text(ride['commission']),
                   ],
                 ),
               ],
@@ -162,24 +180,9 @@ class _HomePageState extends State<HomePage> {
           ),
           actions: <Widget>[
             TextButton(
-              style: TextButton.styleFrom(
-                primary: Colors.white,
-                backgroundColor: Colors.red,
-              ),
-              child: const Text('Reject'),
+              child: const Text('Close'),
               onPressed: () {
                 Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                primary: Colors.white,
-                backgroundColor: Colors.green,
-              ),
-              child: const Text('Accept'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Handle the accept action
               },
             ),
           ],
@@ -190,12 +193,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentMonth = DateFormat('MMMM').format(DateTime.now()); // Get current month
-
     return Scaffold(
       drawer: NavBar(),
       appBar: AppBar(
-        title: const Text('Requests'),
+        title: const Text('Completed Rides'),
         backgroundColor: Colors.amber, // Set the AppBar color
       ),
       body: SafeArea(
@@ -219,68 +220,6 @@ class _HomePageState extends State<HomePage> {
                   ProfileHeader(
                     fullName: fullName,
                     imageUrl: imageUrl,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurpleAccent,
-                        borderRadius: const BorderRadius.all(Radius.circular(30)),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            currentMonth,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'No. of Rides',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                '53', // This will be replaced with the dynamic value later
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Commission',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                '5000', // This will be replaced with the dynamic value later
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 8), // Add padding between containers
                   Expanded(
@@ -321,40 +260,38 @@ class _HomePageState extends State<HomePage> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
+                                            Text(
+                                              'Customer Name: ${ride['customerName']}',
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Company Name: ${ride['companyName']}',
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          'Date: ${ride['date']}',
-                                                          style: const TextStyle(
-                                                            fontSize: 18,
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 16),
-                                                        Text(
-                                                          'Time: ${ride['time']}',
-                                                          style: const TextStyle(
-                                                            fontSize: 18,
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Text(
-                                                      'Destination: ${ride['destination']}',
-                                                      style: const TextStyle(
-                                                        fontSize: 18,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ],
+                                                Text(
+                                                  'Date: ${ride['date']}',
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'Time: ${ride['time']}',
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.white,
+                                                  ),
                                                 ),
                                               ],
                                             ),

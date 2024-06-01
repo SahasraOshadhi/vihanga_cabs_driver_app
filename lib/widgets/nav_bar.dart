@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/authentication/Login/login_screen.dart';
+import 'package:vihanga_cabs_driver_app/pages/completed_rides.dart';
 import 'package:vihanga_cabs_driver_app/pages/home_page.dart';
 import 'package:vihanga_cabs_driver_app/pages/accepted_rides.dart';
 
@@ -23,6 +24,11 @@ class NavBar extends StatelessWidget {
 
   void _goToAcceptedRequestPage(BuildContext context) {
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const AcceptedRides()),
+    );
+  }
+
+  void _goToCompletedRidesPage(BuildContext context) {
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const CompletedRides()),
     );
   }
 
@@ -91,7 +97,7 @@ class NavBar extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.add_task),
             title: Text('Completed'),
-            onTap: () => null,
+            onTap: () => _goToCompletedRidesPage(context),
           ),
 
           ListTile(

@@ -1,3 +1,5 @@
+// Import the ProfileHeader widget
+import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -74,7 +76,6 @@ class _HomePageState extends State<HomePage> {
     final String currentMonth = DateFormat('MMMM').format(DateTime.now()); // Get current month
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFB7), // Set the background color
       drawer: NavBar(),
       appBar: AppBar(
         title: const Text('Requests'),
@@ -98,39 +99,9 @@ class _HomePageState extends State<HomePage> {
               return Column(
                 children: [
                   const SizedBox(height: 8), // Add padding below AppBar
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurpleAccent,
-                        borderRadius: const BorderRadius.all(Radius.circular(30)),
-                      ),
-                      child: Row(
-                        children: [
-                          ClipOval(
-                            child: Image.network(
-                              imageUrl,
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              fullName,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  ProfileHeader(
+                    fullName: fullName,
+                    imageUrl: imageUrl,
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),

@@ -464,13 +464,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
 
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.lightBlue,
+                          backgroundColor: Colors.deepPurpleAccent,
                           padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
                         ),
                         child: const Text(
                             "Next",
                             style: TextStyle(
-                              color: Colors.black,
+                              color: Colors.white,
                               fontSize:15,
                             ),
                         )

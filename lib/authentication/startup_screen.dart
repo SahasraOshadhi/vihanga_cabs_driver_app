@@ -71,13 +71,13 @@ class _StartUpScreenState extends State<StartUpScreen> {
 
 
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.lightBlue,
+                      backgroundColor: Colors.deepPurpleAccent,
                       padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
                     ),
                     child: const Text(
                         "Join as a Driver",
                       style: TextStyle(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontSize:20,
                       ),
 

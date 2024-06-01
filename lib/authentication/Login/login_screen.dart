@@ -190,13 +190,13 @@ class _LogInScreenState extends State<LogInScreen> {
                         },
 
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.lightBlue,
+                          backgroundColor: Colors.deepPurpleAccent,
                           padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
                         ),
                         child: const Text(
                             "LogIn",
                           style: TextStyle(
-                          color: Colors.black,
+                          color: Colors.white,
                           fontSize:15,
                         )
                     ),

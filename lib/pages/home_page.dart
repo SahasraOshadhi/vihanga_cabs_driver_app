@@ -16,11 +16,13 @@ class _HomePageState extends State<HomePage> {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref().child('drivers');
 
   late Future<Map<String, dynamic>> _userData;
+  late Future<List<Map<String, dynamic>>> _ridesData;
 
   @override
   void initState() {
     super.initState();
     _userData = _fetchUserData();
+    _ridesData = _fetchRidesData();
   }
 
   Future<Map<String, dynamic>> _fetchUserData() async {
@@ -49,14 +51,34 @@ class _HomePageState extends State<HomePage> {
     return {};
   }
 
+  Future<List<Map<String, dynamic>>> _fetchRidesData() async {
+    // This function will fetch the ride data from Firebase
+    // For demonstration, we use static data here
+    return [
+      {
+        'date': '15/06/2024',
+        'time': '13:30 PM',
+        'destination': 'Location A',
+      },
+      {
+        'date': '16/06/2024',
+        'time': '14:30 PM',
+        'destination': 'Location B',
+      },
+      // Add more static rides here
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final String currentMonth = DateFormat('MMMM').format(DateTime.now()); // Get current month
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFFFFB7), // Set the background color
       drawer: NavBar(),
       appBar: AppBar(
         title: const Text('Requests'),
+        backgroundColor: Colors.amber, // Set the AppBar color
       ),
       body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(
@@ -82,7 +104,7 @@ class _HomePageState extends State<HomePage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.lightBlue,
+                        color: Colors.deepPurpleAccent,
                         borderRadius: const BorderRadius.all(Radius.circular(30)),
                       ),
                       child: Row(
@@ -110,14 +132,13 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  // Add the second container
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.lightBlue,
+                        color: Colors.deepPurpleAccent,
                         borderRadius: const BorderRadius.all(Radius.circular(30)),
                       ),
                       child: Column(
@@ -171,6 +192,102 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 8), // Add padding between containers
+                  Expanded(
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _ridesData,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Error fetching ride data: ${snapshot.error}'));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text('No ride data available'));
+                        } else {
+                          final List<Map<String, dynamic>> ridesData = snapshot.data!;
+
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black12,
+                                borderRadius: const BorderRadius.all(Radius.circular(30)),
+                              ),
+                              child: ListView.builder(
+                                itemCount: ridesData.length,
+                                itemBuilder: (context, index) {
+                                  final ride = ridesData[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.deepPurpleAccent,
+                                        borderRadius: const BorderRadius.all(Radius.circular(30)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Date: ${ride['date']}',
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    'Time: ${ride['time']}',
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    'Destination: ${ride['destination']}',
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  // Handle the accept button press
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  primary: Colors.grey, // Background color
+                                                ),
+                                                child: const Text(
+                                                  'Accept',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                  ),),
+
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ),
                 ],

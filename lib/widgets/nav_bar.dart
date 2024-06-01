@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vihanga_cabs_driver_app/authentication/Login/login_screen.dart';
 import 'package:vihanga_cabs_driver_app/pages/home_page.dart';
+import 'package:vihanga_cabs_driver_app/pages/accepted_rides.dart';
+
 
 class NavBar extends StatelessWidget {
   const NavBar({super.key});
@@ -18,6 +20,13 @@ class NavBar extends StatelessWidget {
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()),
     );
   }
+
+  void _goToAcceptedRequestPage(BuildContext context) {
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const AcceptedRides()),
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +69,7 @@ class NavBar extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.car_rental),
             title: Text('Accepted'),
-            onTap: () => null,
+            onTap: () => _goToAcceptedRequestPage(context),
             trailing: ClipOval(
               child: Container(
                 color: Colors.green,

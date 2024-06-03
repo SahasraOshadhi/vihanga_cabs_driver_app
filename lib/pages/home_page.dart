@@ -196,7 +196,7 @@ class _HomePageState extends State<HomePage> {
       drawer: NavBar(),
       appBar: AppBar(
         title: const Text('Requests'),
-        backgroundColor: Colors.amber, // Set the AppBar color
+        backgroundColor: Colors.amber,
       ),
       body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(

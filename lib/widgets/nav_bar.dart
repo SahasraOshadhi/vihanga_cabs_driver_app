@@ -3,6 +3,7 @@ import 'package:vihanga_cabs_driver_app/authentication/Login/login_screen.dart';
 import 'package:vihanga_cabs_driver_app/pages/completed_rides.dart';
 import 'package:vihanga_cabs_driver_app/pages/home_page.dart';
 import 'package:vihanga_cabs_driver_app/pages/accepted_rides.dart';
+import 'package:vihanga_cabs_driver_app/pages/profile.dart';
 
 
 class NavBar extends StatelessWidget {
@@ -29,6 +30,11 @@ class NavBar extends StatelessWidget {
 
   void _goToCompletedRidesPage(BuildContext context) {
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const CompletedRides()),
+    );
+  }
+
+  void _goToProfilePage(BuildContext context) {
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const ProfilePage()),
     );
   }
 
@@ -103,7 +109,7 @@ class NavBar extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.settings),
             title: Text('Profile'),
-            onTap: () => null,
+            onTap: () => _goToProfilePage(context),
           ),
 
           ListTile(

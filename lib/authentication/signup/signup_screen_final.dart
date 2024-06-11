@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:vihanga_cabs_driver_app/authentication/Login/login_screen.dart';
 import 'package:vihanga_cabs_driver_app/methods/common_methods.dart';
 import 'package:vihanga_cabs_driver_app/models/driver_data.dart';
-import 'package:vihanga_cabs_driver_app/pages/home_page.dart';
 import 'package:vihanga_cabs_driver_app/widgets/loading_dialog.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class SignupFinal extends StatefulWidget {
   final DriverData driverData;
@@ -90,8 +92,7 @@ class _SignupFinalState extends State<SignupFinal> {
     return password == confirmPassword;
   }
 
-  Future<void> registerNewDriver() async
-  {
+  Future<void> registerNewDriver() async {
     widget.driverData.userName = userNameTextEditingController.text;
     widget.driverData.password = confirmPasswordTextEditingController.text;
 
@@ -104,9 +105,8 @@ class _SignupFinalState extends State<SignupFinal> {
     showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (BuildContext) => LoadingDialog(messageText: "Registering your account. This might take some time...." )
+        builder: (BuildContext) => LoadingDialog(messageText: "Registering your account. This might take some time....")
     );
-
 
     try {
       final User? driverFirebase = (
@@ -121,7 +121,10 @@ class _SignupFinalState extends State<SignupFinal> {
       ).user;
 
       if (driverFirebase != null) {
-        DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("drivers").child(driverFirebase.uid);
+        String driverId = driverFirebase.uid;
+
+        // Save to Realtime Database
+        DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("drivers").child(driverId);
 
         Map<String, String> driverDataMap = {
           "firstName": widget.driverData.firstName!,
@@ -149,18 +152,22 @@ class _SignupFinalState extends State<SignupFinal> {
           "emissionTest": widget.driverData.emissionTest!,
           "userName": widget.driverData.userName!,
           "password": widget.driverData.password!,
-          "id": driverFirebase.uid,
-          "blockStatus": "no"
+          "id": driverId,
+          "blockStatus": "yes"
         };
 
         await driversRef.set(driverDataMap);
 
-        // Save the username and email in the usernames node
+        // Save to Firestore
+        FirebaseFirestore firestore = FirebaseFirestore.instance;
+        await firestore.collection('drivers').doc(driverId).set(driverDataMap);
+
+        // Save the username and email in the usernames node in Realtime Database
         DatabaseReference usernamesRef = FirebaseDatabase.instance.ref().child("usernames").child(widget.driverData.userName!);
         await usernamesRef.set(widget.driverData.email);
 
         Navigator.pop(context); // Dismiss the loading dialog
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => HomePage()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LogInScreen()));
       } else {
         Navigator.pop(context); // Dismiss the loading dialog if registration fails
         commonMethods.displaySnackBar("Registration failed. Please try again.", context);
@@ -169,8 +176,6 @@ class _SignupFinalState extends State<SignupFinal> {
       Navigator.pop(context); // Dismiss the loading dialog
       commonMethods.displaySnackBar(e.toString(), context);
     }
-
-
   }
 
 

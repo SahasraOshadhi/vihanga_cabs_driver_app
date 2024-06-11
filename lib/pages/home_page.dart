@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
+import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,34 +14,30 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref().child('drivers');
 
   late Future<Map<String, dynamic>> _userData;
-  late Future<List<Map<String, dynamic>>> _ridesData;
+  late Stream<QuerySnapshot> _ridesStream;
 
   @override
   void initState() {
     super.initState();
     _userData = _fetchUserData();
-    _ridesData = _fetchRidesData();
+    _ridesStream = _fetchRidesStream();
   }
 
   Future<Map<String, dynamic>> _fetchUserData() async {
     final User? user = _auth.currentUser;
     if (user != null) {
-      final DatabaseReference userRef = _databaseRef.child(user.uid);
-
-      DataSnapshot snapshot = await userRef.get();
-      if (snapshot.exists) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map;
-        final String firstName = data['firstName'] ?? '';
-        final String lastName = data['lastName'] ?? '';
-        final String imageUrl = data['selfPic'] ?? ''; // Fetch the selfPic URL
-
+      final DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('drivers')
+          .doc(user.uid)
+          .get();
+      if (userSnapshot.exists) {
+        final data = userSnapshot.data() as Map<String, dynamic>;
         return {
-          'firstName': firstName,
-          'lastName': lastName,
-          'imageUrl': imageUrl,
+          'firstName': data['firstName'] ?? '',
+          'lastName': data['lastName'] ?? '',
+          'imageUrl': data['selfPic'] ?? '',
         };
       } else {
         print('No user data found for the provided UID.');
@@ -52,37 +48,78 @@ class _HomePageState extends State<HomePage> {
     return {};
   }
 
-  Future<List<Map<String, dynamic>>> _fetchRidesData() async {
-    // This function will fetch the ride data from Firebase
-    // For demonstration, we use static data here
-    return [
-      {
-        'date': '15/06/2024',
-        'time': '13:30 PM',
-        'destination': 'Location A',
-        'customerName': 'John Doe',
-        'companyName': 'ABC Corp',
-        'pickUp': 'Location X',
-        'stops': 'None',
-        'passengers': '3',
-        'estimatedKm': '15',
-      },
-      {
-        'date': '16/06/2024',
-        'time': '14:30 PM',
-        'destination': 'Location B',
-        'customerName': 'Jane Smith',
-        'companyName': 'XYZ Ltd',
-        'pickUp': 'Location Y',
-        'stops': 'Stop 1, Stop 2',
-        'passengers': '2',
-        'estimatedKm': '20',
-      },
-      // Add more static rides here
-    ];
+  Stream<QuerySnapshot> _fetchRidesStream() {
+    final User? user = _auth.currentUser;
+    if (user != null) {
+      return FirebaseFirestore.instance
+          .collection('ride_requests')
+          .where('assignedDriver', isEqualTo: user.uid)
+          .snapshots();
+    } else {
+      print('User is not logged in.');
+      return const Stream.empty();
+    }
   }
 
-  void _showRideDetails(BuildContext context, Map<String, dynamic> ride) {
+  Future<Map<String, dynamic>> _fetchRideDetails(DocumentSnapshot rideRequest) async {
+    var data = rideRequest.data() as Map<String, dynamic>;
+
+    // Fetch company data
+    var companyData = await FirebaseFirestore.instance
+        .collection('companies')
+        .doc(data['companyUserId'])
+        .get();
+
+    // Fetch user data
+    var userData = await FirebaseFirestore.instance
+        .collection('company_users')
+        .doc(data['userId'])
+        .get();
+
+    return {
+      'companyName': companyData['companyName'],
+      'customerName': userData['name'],
+      'pickupLocation': data['pickupLocation'],
+      'destination': data['destination'],
+      'date': data['date'],
+      'time': data['time'],
+      'passengers': data['passengers'],
+      'stop1': data['stop1'],
+      'stop2': data['stop2'],
+    };
+  }
+
+  void _rejectRideRequest(BuildContext context, DocumentSnapshot rideRequest) async {
+    var data = rideRequest.data() as Map<String, dynamic>;
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentReference rideRef = FirebaseFirestore.instance.collection('ride_requests').doc(rideRequest.id);
+      transaction.update(rideRef, {
+        'acceptedByDriver': 'no',
+        'assignedDriver': FieldValue.delete(),
+        'assigned': 'no',
+      });
+    });
+
+    Navigator.of(context).pop(); // Close the dialog
+    setState(() {}); // Trigger a UI update to remove the rejected ride
+  }
+
+  void _showRideDetails(BuildContext context, DocumentSnapshot rideRequest) async {
+    var data = rideRequest.data() as Map<String, dynamic>;
+
+    // Fetch company data
+    var companyData = await FirebaseFirestore.instance
+        .collection('companies')
+        .doc(data['companyUserId'])
+        .get();
+
+    // Fetch user data
+    var userData = await FirebaseFirestore.instance
+        .collection('company_users')
+        .doc(data['userId'])
+        .get();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -96,7 +133,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Customer Name:'),
-                    Text(ride['customerName']),
+                    Text(userData['name']),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -104,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Company Name:'),
-                    Text(ride['companyName']),
+                    Text(companyData['companyName']),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -112,9 +149,9 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Date:'),
-                    Text(ride['date']),
+                    Text(data['date']),
                     Text('Time:'),
-                    Text(ride['time']),
+                    Text(data['time']),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -122,7 +159,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Destination:'),
-                    Text(ride['destination']),
+                    Text(data['destination']),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -130,7 +167,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Pick up:'),
-                    Text(ride['pickUp']),
+                    Text(data['pickupLocation']),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -138,7 +175,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Stops:'),
-                    Text(ride['stops']),
+                    Text(data['stop1'].isNotEmpty ? 'Stop 1: ${data['stop1']}, Stop 2: ${data['stop2']}' : 'None'),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -146,15 +183,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('No. of passengers:'),
-                    Text(ride['passengers']),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Estimated km:'),
-                    Text(ride['estimatedKm']),
+                    Text(data['passengers'].toString()),
                   ],
                 ),
               ],
@@ -168,7 +197,7 @@ class _HomePageState extends State<HomePage> {
               ),
               child: const Text('Reject'),
               onPressed: () {
-                Navigator.of(context).pop();
+                _rejectRideRequest(context, rideRequest);
               },
             ),
             TextButton(
@@ -190,7 +219,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentMonth = DateFormat('MMMM').format(DateTime.now()); // Get current month
+    final String currentMonth = DateFormat('MMMM').format(DateTime.now());
 
     return Scaffold(
       drawer: NavBar(),
@@ -215,7 +244,7 @@ class _HomePageState extends State<HomePage> {
 
               return Column(
                 children: [
-                  const SizedBox(height: 8), // Add padding below AppBar
+                  const SizedBox(height: 8),
                   ProfileHeader(
                     fullName: fullName,
                     imageUrl: imageUrl,
@@ -250,7 +279,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               Text(
-                                '53', // This will be replaced with the dynamic value later
+                                '53', // Replace with dynamic value
                                 style: const TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
@@ -270,7 +299,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               Text(
-                                '5000', // This will be replaced with the dynamic value later
+                                'LKR 12750', // Replace with dynamic value
                                 style: const TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
@@ -282,90 +311,58 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8), // Add padding between containers
                   Expanded(
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _ridesData,
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: _ridesStream,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
                         } else if (snapshot.hasError) {
-                          return Center(child: Text('Error fetching ride data: ${snapshot.error}'));
-                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Center(child: Text('No ride data available'));
+                          return Center(child: Text('Error fetching rides: ${snapshot.error}'));
+                        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(child: Text('No ride requests found'));
                         } else {
-                          final List<Map<String, dynamic>> ridesData = snapshot.data!;
+                          final List<DocumentSnapshot> rides = snapshot.data!.docs;
 
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black12,
-                                borderRadius: const BorderRadius.all(Radius.circular(30)),
-                              ),
-                              child: ListView.builder(
-                                itemCount: ridesData.length,
-                                itemBuilder: (context, index) {
-                                  final ride = ridesData[index];
-                                  return GestureDetector(
-                                    onTap: () => _showRideDetails(context, ride),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Colors.deepPurpleAccent,
-                                          borderRadius: const BorderRadius.all(Radius.circular(30)),
+                          return ListView.builder(
+                            itemCount: rides.length,
+                            itemBuilder: (context, index) {
+                              final DocumentSnapshot rideRequest = rides[index];
+
+                              return GestureDetector(
+                                onTap: () => _showRideDetails(context, rideRequest),
+                                child: Card(
+                                  margin: const EdgeInsets.all(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pickup Location: ${rideRequest['pickupLocation']}',
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                         ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          'Date: ${ride['date']}',
-                                                          style: const TextStyle(
-                                                            fontSize: 18,
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 16),
-                                                        Text(
-                                                          'Time: ${ride['time']}',
-                                                          style: const TextStyle(
-                                                            fontSize: 18,
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Text(
-                                                      'Destination: ${ride['destination']}',
-                                                      style: const TextStyle(
-                                                        fontSize: 18,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Destination: ${rideRequest['destination']}',
+                                          style: const TextStyle(fontSize: 16),
                                         ),
-                                      ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Date: ${rideRequest['date']}',
+                                          style: const TextStyle(fontSize: 16),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Time: ${rideRequest['time']}',
+                                          style: const TextStyle(fontSize: 16),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         }
                       },

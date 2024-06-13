@@ -68,27 +68,29 @@ class _LogInScreenState extends State<LogInScreen> {
       if(!context.mounted) return;
     Navigator.pop(context);
 
-    if (driverFirebase != null){
+    if (driverFirebase != null) {
       DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("drivers").child(driverFirebase.uid);
-      driversRef.once().then((snap){
-        if(snap.snapshot.value != null){
-
-          if((snap.snapshot.value as Map)["blockStatus"] == "no"){
+      driversRef.once().then((snap) {
+        if (snap.snapshot.value != null) {
+          if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
             userName = (snap.snapshot.value as Map)["userName"];
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => HomePage()));
-          }else{
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (c) => HomePage(driverId: driverFirebase.uid),
+              ),
+            );
+          } else {
             FirebaseAuth.instance.signOut();
-            commonMethods.displaySnackBar("Your account is not approved or blocked. Contact Vihanga Cabs ", context);
+            commonMethods.displaySnackBar("Your account is not approved or blocked. Contact Vihanga Cabs", context);
           }
-
-        } else{
+        } else {
           FirebaseAuth.instance.signOut();
           commonMethods.displaySnackBar("Sign Up as a driver", context);
         }
-      } );
+      });
     }
-
-    }
+  }
 
   @override
   Widget build(BuildContext context) {

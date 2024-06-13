@@ -94,6 +94,7 @@ class _SignupVehicleState extends State<SignupVehicle> {
           widget.driverData.emissionTest = imageUrl;
           break;
       }
+
     });
   }
 
@@ -141,8 +142,9 @@ class _SignupVehicleState extends State<SignupVehicle> {
                       controller: vehicleOutsidePicController,
                       labelText: 'Outside Picture of the vehicle',
                       helperText: "",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'vehicleOutsidePic'),
+                      onImageUploaded:  _onImageUploaded,
                       driverEmail: widget.driverData.email!,
+                      fieldName: 'vehicleOutsidePic',
                     ),
 
                     const SizedBox(height: 22,),
@@ -151,8 +153,9 @@ class _SignupVehicleState extends State<SignupVehicle> {
                       controller: vehicleInsidePicController,
                       labelText: 'Inside Picture of the vehicle',
                       helperText: "",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'vehicleInsidePic'),
+                      onImageUploaded:  _onImageUploaded,
                       driverEmail: widget.driverData.email!,
+                      fieldName: 'vehicleInsidePic',
                     ),
 
                     const SizedBox(height: 22,),
@@ -228,8 +231,9 @@ class _SignupVehicleState extends State<SignupVehicle> {
                       controller: emissionTestTextEditingController,
                       labelText: 'Picture of Emission Test Report',
                       helperText: "Rename the picture as 'Emission_Test'",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'emissionTest'),
+                      onImageUploaded:  _onImageUploaded,
                       driverEmail: widget.driverData.email!,
+                      fieldName: 'emissionTest',
                     ),
 
                     const SizedBox(height: 22,),
@@ -269,13 +273,10 @@ class _SignupVehicleState extends State<SignupVehicle> {
                             if (isConnected && formIsValid) {
 
                               widget.driverData.vehicleModel = vehicleModelTextEditingController.text;
-                              widget.driverData.vehicleInsidePic = vehicleInsidePicController.text;
-                              widget.driverData.vehicleOutsidePic = vehicleOutsidePicController.text;
                               widget.driverData.vehicleRegNum = vehicleRegNumTextEditingController.text;
                               widget.driverData.manufacturedYear = manufacturedYearTextEditingController.text;
                               widget.driverData.lastServiceDate = lastServiceDateTextEditingController.text;
                               widget.driverData.mileage = mileageTextEditingController.text;
-                              widget.driverData.emissionTest = emissionTestTextEditingController.text;
 
                               Navigator.push(context, MaterialPageRoute(builder: (context) => SignupFinal(driverData: widget.driverData),),);
                             }

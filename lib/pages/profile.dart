@@ -5,7 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String driverId;
+  const ProfilePage({super.key, required this.driverId});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -54,7 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: NavBar(),
+      drawer: NavBar(driverId: widget.driverId,),
       appBar: AppBar(
         title: const Text('Profile'),
         backgroundColor: Colors.amber,

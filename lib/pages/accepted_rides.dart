@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:vihanga_cabs_driver_app/pages/ongoing_rides.dart';
 import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
 import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 class AcceptedRides extends StatefulWidget {
-  const AcceptedRides({super.key});
+  final String driverId;
+  const AcceptedRides({super.key, required this.driverId});
 
   @override
   State<AcceptedRides> createState() => _AcceptedRequestState();
@@ -13,34 +15,30 @@ class AcceptedRides extends StatefulWidget {
 
 class _AcceptedRequestState extends State<AcceptedRides> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref().child('drivers');
 
   late Future<Map<String, dynamic>> _userData;
-  late Future<List<Map<String, dynamic>>> _ridesData;
+  late Stream<QuerySnapshot> _acceptedRidesStream;
 
   @override
   void initState() {
     super.initState();
     _userData = _fetchUserData();
-    _ridesData = _fetchRidesData();
+    _acceptedRidesStream = _fetchAcceptedRidesStream();
   }
 
   Future<Map<String, dynamic>> _fetchUserData() async {
     final User? user = _auth.currentUser;
     if (user != null) {
-      final DatabaseReference userRef = _databaseRef.child(user.uid);
-
-      DataSnapshot snapshot = await userRef.get();
-      if (snapshot.exists) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map;
-        final String firstName = data['firstName'] ?? '';
-        final String lastName = data['lastName'] ?? '';
-        final String imageUrl = data['selfPic'] ?? ''; // Fetch the selfPic URL
-
+      final DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('drivers')
+          .doc(user.uid)
+          .get();
+      if (userSnapshot.exists) {
+        final data = userSnapshot.data() as Map<String, dynamic>;
         return {
-          'firstName': firstName,
-          'lastName': lastName,
-          'imageUrl': imageUrl,
+          'firstName': data['firstName'] ?? '',
+          'lastName': data['lastName'] ?? '',
+          'imageUrl': data['selfPic'] ?? '',
         };
       } else {
         print('No user data found for the provided UID.');
@@ -51,25 +49,57 @@ class _AcceptedRequestState extends State<AcceptedRides> {
     return {};
   }
 
-  Future<List<Map<String, dynamic>>> _fetchRidesData() async {
-    // This function will fetch the ride data from Firebase
-    // For demonstration, we use static data here
-    return [
-      {
-        'date': '15/06/2024',
-        'time': '13:30 PM',
-        'destination': 'Location A',
-      },
-      {
-        'date': '16/06/2024',
-        'time': '14:30 PM',
-        'destination': 'Location B',
-      },
-      // Add more static rides here
-    ];
+  Stream<QuerySnapshot> _fetchAcceptedRidesStream() {
+    final User? user = _auth.currentUser;
+    if (user != null) {
+      return FirebaseFirestore.instance
+          .collection('ride_requests')
+          .where('assignedDriver', isEqualTo: user.uid)
+          .where('acceptedByDriver', isEqualTo: 'yes')
+          .where('rideStarted', isNotEqualTo: 'yes')
+          .snapshots();
+    } else {
+      print('User is not logged in.');
+      return const Stream.empty();
+    }
   }
 
-  void _showRideDetails(BuildContext context) {
+  Future<Map<String, dynamic>> _fetchRideDetails(DocumentSnapshot rideRequest) async {
+    var data = rideRequest.data() as Map<String, dynamic>;
+
+    // Fetch company data
+    var companyData = await _fetchCompanyData(data['companyUserId']);
+
+    // Fetch user data
+    var userData = await _fetchCompanyUserData(data['userId']);
+
+    return {
+      'companyName': companyData['companyName'],
+      'customerName': userData['name'],
+      'customerContact': userData['telephone'],
+      'pickupLocation': data['pickupLocation'],
+      'destination': data['destination'],
+      'date': data['date'],
+      'time': data['time'],
+      'passengers': data['passengers'],
+      'stop1': data['stop1'],
+      'stop2': data['stop2'],
+    };
+  }
+
+  Future<Map<String, dynamic>> _fetchCompanyData(String companyUserId) async {
+    DocumentSnapshot companySnapshot = await FirebaseFirestore.instance.collection('companies').doc(companyUserId).get();
+    return companySnapshot.data() as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> _fetchCompanyUserData(String userId) async {
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('company_users').doc(userId).get();
+    return userSnapshot.data() as Map<String, dynamic>;
+  }
+
+  void _showAcceptedRideDetails(BuildContext context, DocumentSnapshot rideRequest) async {
+    var rideDetails = await _fetchRideDetails(rideRequest);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -81,88 +111,52 @@ class _AcceptedRequestState extends State<AcceptedRides> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage('https://via.placeholder.com/150'), // Placeholder profile picture URL
-                      radius: 30,
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Customer',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Spacer(),
-                    const Text('Value'), // Placeholder value
+                    Text('Customer Name:'),
+                    Text(rideDetails['customerName']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
+                  children: [
                     Text('Customer Contact:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
+                    Text(rideDetails['customerContact']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
+                  children: [
                     Text('Company Name:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
+                    Text(rideDetails['companyName']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
+                  children: [
                     Text('Date:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
-                    Spacer(),
+                    Text(rideDetails['date']),
                     Text('Time:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
+                    Text(rideDetails['time']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
+                  children: [
                     Text('Destination:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
+                    Text(rideDetails['destination']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
+                  children: [
                     Text('Pick up:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
+                    Text(rideDetails['pickupLocation']),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
+                  children: [
                     Text('Stops:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: const [
-                    Text('No. of passengers:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: const [
-                    Text('Estimated km:'),
-                    Spacer(),
-                    Text('Value'), // Placeholder value
+                    Text(rideDetails['stop1'].isNotEmpty ? 'Stop 1: ${rideDetails['stop1']}, Stop 2: ${rideDetails['stop2']}' : 'None'),
                   ],
                 ),
               ],
@@ -181,120 +175,134 @@ class _AcceptedRequestState extends State<AcceptedRides> {
     );
   }
 
+  Future<void> _startRide(DocumentSnapshot rideRequest) async {
+    try {
+      await FirebaseFirestore.instance.collection('ride_requests').doc(rideRequest.id).update({'rideStarted': 'yes'});
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) =>  OngoingRides(driverId: widget.driverId,)),);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ride started successfully.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start ride: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: NavBar(),
+      drawer: NavBar(driverId: widget.driverId),
       appBar: AppBar(
         title: const Text('Accepted Requests'),
-        backgroundColor: Colors.amber, // Set the AppBar color
+        backgroundColor: Colors.amber,
       ),
-      body: SafeArea(
-        child: FutureBuilder<Map<String, dynamic>>(
-          future: _userData,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error fetching user data: ${snapshot.error}'));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('No user data available'));
-            } else {
-              final Map<String, dynamic> userData = snapshot.data!;
-              final String fullName = '${userData['firstName']} ${userData['lastName']}';
-              final String imageUrl = userData['imageUrl'];
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              FutureBuilder<Map<String, dynamic>>(
+                future: _userData,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error fetching user data: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No user data available'));
+                  } else {
+                    final Map<String, dynamic> userData = snapshot.data!;
+                    final String fullName = '${userData['firstName']} ${userData['lastName']}';
+                    final String imageUrl = userData['imageUrl'];
 
-              return Column(
-                children: [
-                  const SizedBox(height: 8), // Add padding below AppBar
-                  ProfileHeader(
-                    fullName: fullName,
-                    imageUrl: imageUrl,
-                  ),
-                  const SizedBox(height: 8), // Add padding between containers
-                  Expanded(
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _ridesData,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        } else if (snapshot.hasError) {
-                          return Center(child: Text('Error fetching ride data: ${snapshot.error}'));
-                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Center(child: Text('No ride data available'));
-                        } else {
-                          final List<Map<String, dynamic>> ridesData = snapshot.data!;
+                    return ProfileHeader(
+                      fullName: fullName,
+                      imageUrl: imageUrl,
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _acceptedRidesStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    } else {
+                      var rideRequests = snapshot.data!.docs;
 
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black12,
-                                borderRadius: const BorderRadius.all(Radius.circular(30)),
-                              ),
-                              child: ListView.builder(
-                                itemCount: ridesData.length,
-                                itemBuilder: (context, index) {
-                                  final ride = ridesData[index];
-                                  return GestureDetector(
-                                    onTap: () => _showRideDetails(context),
+                      if (rideRequests.isEmpty) {
+                        return const Center(
+                          child: Text('No accepted ride requests available.'),
+                        );
+                      }
+
+                      return ListView.builder(
+                        itemCount: rideRequests.length,
+                        itemBuilder: (context, index) {
+                          var rideRequest = rideRequests[index];
+
+                          return FutureBuilder<Map<String, dynamic>>(
+                            future: _fetchRideDetails(rideRequest),
+                            builder: (context, rideDetailsSnapshot) {
+                              if (rideDetailsSnapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(child: CircularProgressIndicator());
+                              } else if (rideDetailsSnapshot.hasError) {
+                                return Center(child: Text('Error: ${rideDetailsSnapshot.error}'));
+                              } else if (!rideDetailsSnapshot.hasData) {
+                                return const Center(child: Text('No ride details available.'));
+                              } else {
+                                var rideDetails = rideDetailsSnapshot.data!;
+
+                                return GestureDetector(
+                                  onTap: () => _showAcceptedRideDetails(context, rideRequest),
+                                  child: Card(
+                                    margin: const EdgeInsets.all(10),
                                     child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Colors.deepPurpleAccent,
-                                          borderRadius: const BorderRadius.all(Radius.circular(30)),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text(
-                                                  'Date: ${ride['date']}',
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'Time: ${ride['time']}',
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Destination: ${ride['destination']}',
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Customer Name: ${rideDetails['customerName']}',
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold, fontSize: 16),
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Text('Customer Contact: ${rideDetails['customerContact']}'),
+                                          const SizedBox(height: 5),
+                                          Text('Destination: ${rideDetails['destination']}'),
+                                          const SizedBox(height: 5),
+                                          Text('Pick up: ${rideDetails['pickupLocation']}'),
+                                          const SizedBox(height: 5),
+                                          Text('Date: ${rideDetails['date']}'),
+                                          const SizedBox(height: 5),
+                                          Text('Time: ${rideDetails['time']}'),
+                                          const SizedBox(height: 10),
+                                          ElevatedButton(
+                                            onPressed: () => _startRide(rideRequest),
+                                            child: const Text('Start Ride'),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
+                                  ),
+                                );
+                              }
+                            },
                           );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              );
-            }
-          },
-        ),
+                        },
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

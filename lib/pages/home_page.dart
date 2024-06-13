@@ -6,7 +6,10 @@ import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
 import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+
+  final String driverId;
+
+  const HomePage({super.key, required this.driverId});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -17,6 +20,7 @@ class _HomePageState extends State<HomePage> {
 
   late Future<Map<String, dynamic>> _userData;
   late Stream<QuerySnapshot> _ridesStream;
+  List<DocumentSnapshot> _rides = [];
 
   @override
   void initState() {
@@ -54,6 +58,7 @@ class _HomePageState extends State<HomePage> {
       return FirebaseFirestore.instance
           .collection('ride_requests')
           .where('assignedDriver', isEqualTo: user.uid)
+          .where('acceptedByDriver', isEqualTo: 'no')
           .snapshots();
     } else {
       print('User is not logged in.');
@@ -102,7 +107,25 @@ class _HomePageState extends State<HomePage> {
     });
 
     Navigator.of(context).pop(); // Close the dialog
-    setState(() {}); // Trigger a UI update to remove the rejected ride
+    setState(() {
+      _rides.remove(rideRequest); // Remove the rejected ride from the local list
+    });
+  }
+
+  void _acceptRideRequest(BuildContext context, DocumentSnapshot rideRequest) async {
+    var data = rideRequest.data() as Map<String, dynamic>;
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentReference rideRef = FirebaseFirestore.instance.collection('ride_requests').doc(rideRequest.id);
+      transaction.update(rideRef, {
+        'acceptedByDriver': 'yes',
+      });
+    });
+
+    Navigator.of(context).pop(); // Close the dialog
+    setState(() {
+      _rides.remove(rideRequest); // Remove the accepted ride from the local list
+    });
   }
 
   void _showRideDetails(BuildContext context, DocumentSnapshot rideRequest) async {
@@ -207,8 +230,7 @@ class _HomePageState extends State<HomePage> {
               ),
               child: const Text('Accept'),
               onPressed: () {
-                Navigator.of(context).pop();
-                // Handle the accept action
+                _acceptRideRequest(context, rideRequest);
               },
             ),
           ],
@@ -222,7 +244,7 @@ class _HomePageState extends State<HomePage> {
     final String currentMonth = DateFormat('MMMM').format(DateTime.now());
 
     return Scaffold(
-      drawer: NavBar(),
+      drawer: NavBar(driverId: widget.driverId,),
       appBar: AppBar(
         title: const Text('Requests'),
         backgroundColor: Colors.amber,

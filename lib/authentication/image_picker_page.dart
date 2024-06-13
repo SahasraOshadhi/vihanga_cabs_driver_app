@@ -8,8 +8,9 @@ class ImagePickerTextField extends StatefulWidget {
   final TextEditingController controller;
   final String labelText;
   final String helperText;
-  final Function(String) onImageUploaded;
+  final Function(String, String) onImageUploaded;
   final String driverEmail;
+  final String fieldName; // Add this to identify the field
 
   const ImagePickerTextField({
     required this.controller,
@@ -17,6 +18,7 @@ class ImagePickerTextField extends StatefulWidget {
     required this.helperText,
     required this.onImageUploaded,
     required this.driverEmail,
+    required this.fieldName, // Add this parameter
 
   });
 
@@ -59,8 +61,9 @@ class _ImagePickerTextFieldState extends State<ImagePickerTextField> {
         //Success: get the download url
         imageUrl = await referenceImageToUpload.getDownloadURL();
 
+
         // Call the callback with the imageUrl
-        widget.onImageUploaded(imageUrl);
+        widget.onImageUploaded(imageUrl, widget.fieldName); // Pass fieldName here
 
       }catch(error){
         print(error);
@@ -82,17 +85,12 @@ class _ImagePickerTextFieldState extends State<ImagePickerTextField> {
             controller: widget.controller,
             decoration: InputDecoration(
               labelText: widget.labelText,
-              labelStyle: TextStyle(
-                fontSize: 14,
-              ),
+              labelStyle: TextStyle(fontSize: 14),
               hintText: _imageFile == null ? 'Select an image' : _imageFile!.path,
               helperText: widget.helperText,
               helperStyle: TextStyle(color: Colors.grey.withOpacity(0.7)),
             ),
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 15,
-            ),
+            style: const TextStyle(color: Colors.grey, fontSize: 15),
             readOnly: true,
           ),
         ),

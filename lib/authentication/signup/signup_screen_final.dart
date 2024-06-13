@@ -127,29 +127,29 @@ class _SignupFinalState extends State<SignupFinal> {
         DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("drivers").child(driverId);
 
         Map<String, String> driverDataMap = {
-          "firstName": widget.driverData.firstName!,
-          "lastName": widget.driverData.lastName!,
-          "houseNumAddress": widget.driverData.houseNumAddress!,
-          "provinceAddress": widget.driverData.provinceAddress!,
-          "cityAddress": widget.driverData.cityAddress!,
-          "telNum": widget.driverData.telNum!,
+          "firstName": widget.driverData.firstName ?? "",
+          "lastName": widget.driverData.lastName ?? "",
+          "houseNumAddress": widget.driverData.houseNumAddress ?? "",
+          "provinceAddress": widget.driverData.provinceAddress ?? "",
+          "cityAddress": widget.driverData.cityAddress ?? "",
+          "telNum": widget.driverData.telNum ?? "",
           "email": widget.driverData.email!,
-          "dob": widget.driverData.dob!,
-          "nic": widget.driverData.nic!,
-          "nicPicFront": widget.driverData.nicPicFront!,
-          "nicPicBack": widget.driverData.nicPicBack!,
-          "licenceNum": widget.driverData.licenceNum!,
-          "licensePicFront": widget.driverData.licensePicFront!,
-          "licensePicBack": widget.driverData.licensePicBack!,
-          "selfPic": widget.driverData.selfPic!,
-          "vehicleModel": widget.driverData.vehicleModel!,
-          "vehicleInsidePic": widget.driverData.vehicleInsidePic!,
-          "vehicleOutsidePic": widget.driverData.vehicleOutsidePic!,
-          "vehicleRegNum": widget.driverData.vehicleRegNum!,
-          "manufacturedYear": widget.driverData.manufacturedYear!,
-          "lastServiceDate": widget.driverData.lastServiceDate!,
-          "mileage": widget.driverData.mileage!,
-          "emissionTest": widget.driverData.emissionTest!,
+          "dob": widget.driverData.dob ?? "",
+          "nic": widget.driverData.nic ?? "",
+          "nicPicFront": widget.driverData.nicPicFront ?? "",
+          "nicPicBack": widget.driverData.nicPicBack ?? "",
+          "licenceNum": widget.driverData.licenceNum ?? "",
+          "licensePicFront": widget.driverData.licensePicFront ?? "",
+          "licensePicBack": widget.driverData.licensePicBack ?? "",
+          "selfPic": widget.driverData.selfPic ?? "",
+          "vehicleModel": widget.driverData.vehicleModel ?? "",
+          "vehicleInsidePic": widget.driverData.vehicleInsidePic ?? "",
+          "vehicleOutsidePic": widget.driverData.vehicleOutsidePic ?? "",
+          "vehicleRegNum": widget.driverData.vehicleRegNum ?? "",
+          "manufacturedYear": widget.driverData.manufacturedYear ?? "",
+          "lastServiceDate": widget.driverData.lastServiceDate ?? "",
+          "mileage": widget.driverData.mileage ?? "",
+          "emissionTest": widget.driverData.emissionTest ?? "",
           "userName": widget.driverData.userName!,
           "password": widget.driverData.password!,
           "id": driverId,
@@ -157,6 +157,8 @@ class _SignupFinalState extends State<SignupFinal> {
         };
 
         await driversRef.set(driverDataMap);
+
+
 
         // Save to Firestore
         FirebaseFirestore firestore = FirebaseFirestore.instance;

@@ -344,8 +344,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: nicPicFrontController,
                       labelText: 'Front Picture of NIC',
                       helperText: "Rename the picture as 'NIC_Front'",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'nicPicFront'),
+                      onImageUploaded: _onImageUploaded,
                       driverEmail: emailTextEditingController.text,
+                      fieldName: 'nicPicFront',
                     ),
 
                     const SizedBox(height: 22,),
@@ -354,8 +355,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: nicPicBackController,
                       labelText: 'Back Picture of NIC',
                       helperText: "Rename the picture as 'NIC_Back'",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'nicPicBack'),
+                      onImageUploaded:  _onImageUploaded,
                       driverEmail: emailTextEditingController.text,
+                      fieldName: 'nicPicBack',
                     ),
 
                     const SizedBox(height: 22,),
@@ -390,8 +392,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: licensePicFrontController,
                       labelText: 'Front Picture of License',
                       helperText: "Rename the picture as 'License_Front'",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'licensePicFront'),
+                      onImageUploaded: _onImageUploaded,
                       driverEmail: emailTextEditingController.text,
+                      fieldName: 'licensePicFront',
                     ),
 
                     const SizedBox(height: 22,),
@@ -400,8 +403,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: licensePicBackController,
                       labelText: 'Back Picture of License',
                       helperText: "Rename the picture as 'License_Back'",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'licensePicBack'),
+                      onImageUploaded: _onImageUploaded,
                       driverEmail: emailTextEditingController.text,
+                      fieldName: 'licensePicBack',
                     ),
 
                     const SizedBox(height: 22,),
@@ -411,8 +415,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: selfPicController,
                       labelText: 'Picture of Yourself',
                       helperText: "Rename the picture with your first name.",
-                      onImageUploaded: (imageUrl) => _onImageUploaded(imageUrl, 'selfPic'),
+                      onImageUploaded: _onImageUploaded,
                       driverEmail: emailTextEditingController.text,
+                      fieldName: 'selfPic',
                     ),
 
                     const SizedBox(height: 22,),
@@ -435,6 +440,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                           bool isReadyToNavigate = await checkIfNetworkIsAvailable(context);
 
+                          print(widget.driverData.nicPicFront);
+
 
                           if (isReadyToNavigate) {
 
@@ -447,12 +454,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             widget.driverData.email = emailTextEditingController.text;
                             widget.driverData.dob = dobTextEditingController.text;
                             widget.driverData.nic = nicTextEditingController.text;
-                            widget.driverData.nicPicFront = nicPicFrontController.text;
-                            widget.driverData.nicPicBack = nicPicBackController.text;
                             widget.driverData.licenceNum = licenceNumTextEditingController.text;
-                            widget.driverData.licensePicFront = licensePicFrontController.text;
-                            widget.driverData.licensePicBack = licensePicBackController.text;
-                            widget.driverData.selfPic = selfPicController.text;
+
 
 
 

@@ -49,7 +49,6 @@ class _OngoingRidesState extends State<OngoingRides> {
     return {};
   }
 
-
   Stream<QuerySnapshot> _fetchOngoingRidesStream() {
     final User? user = _auth.currentUser;
     if (user != null) {
@@ -116,7 +115,7 @@ class _OngoingRidesState extends State<OngoingRides> {
     try {
       final ratesData = await _fetchRatesData();
       final costPerKm = double.parse(ratesData['costPerKm'].toString());
-      final waitingRatePerMin = double.parse(ratesData['waitingRatePerMin']);
+      final waitingRatePerMin = double.parse(ratesData['waitingRatePerMin'].toString());
 
       final userData = await _userData;
       final commissionRate = double.parse(userData['commissionRate'].toString());
@@ -162,7 +161,6 @@ class _OngoingRidesState extends State<OngoingRides> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +271,6 @@ class _OngoingRidesState extends State<OngoingRides> {
                           );
                         },
                       );
-
                     }
                   },
                 ),
@@ -434,4 +431,3 @@ class _RideDetailsFormState extends State<RideDetailsForm> {
     );
   }
 }
-

@@ -6,7 +6,6 @@ import 'package:vihanga_cabs_driver_app/widgets/nav_bar.dart';
 import 'package:vihanga_cabs_driver_app/widgets/profile_header.dart';
 
 class HomePage extends StatefulWidget {
-
   final String driverId;
 
   const HomePage({super.key, required this.driverId});
@@ -21,12 +20,16 @@ class _HomePageState extends State<HomePage> {
   late Future<Map<String, dynamic>> _userData;
   late Stream<QuerySnapshot> _ridesStream;
   List<DocumentSnapshot> _rides = [];
+  int _numberOfRides = 0;
+  double _commission = 0.0;
 
   @override
   void initState() {
     super.initState();
     _userData = _fetchUserData();
     _ridesStream = _fetchRidesStream();
+    _fetchRidesAndCommission();
+    print(widget.driverId);
   }
 
   Future<Map<String, dynamic>> _fetchUserData() async {
@@ -57,12 +60,36 @@ class _HomePageState extends State<HomePage> {
     if (user != null) {
       return FirebaseFirestore.instance
           .collection('ride_requests')
-          .where('assignedDriver', isEqualTo: user.uid)
+          .where('assignedDriver', isEqualTo: widget.driverId)
+          .where('assigned', isEqualTo: 'yes')
           .where('acceptedByDriver', isEqualTo: 'no')
           .snapshots();
     } else {
       print('User is not logged in.');
       return const Stream.empty();
+    }
+  }
+
+  Future<void> _fetchRidesAndCommission() async {
+    final User? user = _auth.currentUser;
+    if (user != null) {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+
+      final ridesSnapshot = await FirebaseFirestore.instance
+          .collection('ride_requests')
+          .where('assignedDriver', isEqualTo: user.uid)
+          .where('rideCompletedByDriver', isEqualTo: 'yes')
+          .where('date', isGreaterThanOrEqualTo: startOfMonth)
+          .get();
+
+      setState(() {
+        _numberOfRides = ridesSnapshot.docs.length;
+        _commission = ridesSnapshot.docs.fold(0.0, (sum, doc) {
+          var data = doc.data() as Map<String, dynamic>;
+          return sum + (data['commission'] ?? 0.0);
+        });
+      });
     }
   }
 
@@ -95,8 +122,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _rejectRideRequest(BuildContext context, DocumentSnapshot rideRequest) async {
-    var data = rideRequest.data() as Map<String, dynamic>;
-
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       DocumentReference rideRef = FirebaseFirestore.instance.collection('ride_requests').doc(rideRequest.id);
       transaction.update(rideRef, {
@@ -113,8 +138,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _acceptRideRequest(BuildContext context, DocumentSnapshot rideRequest) async {
-    var data = rideRequest.data() as Map<String, dynamic>;
-
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       DocumentReference rideRef = FirebaseFirestore.instance.collection('ride_requests').doc(rideRequest.id);
       transaction.update(rideRef, {
@@ -244,7 +267,7 @@ class _HomePageState extends State<HomePage> {
     final String currentMonth = DateFormat('MMMM').format(DateTime.now());
 
     return Scaffold(
-      drawer: NavBar(driverId: widget.driverId,),
+      drawer: NavBar(driverId: widget.driverId),
       appBar: AppBar(
         title: const Text('Requests'),
         backgroundColor: Colors.amber,
@@ -293,15 +316,15 @@ class _HomePageState extends State<HomePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
+                              const Text(
                                 'No. of Rides',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
                                 ),
                               ),
                               Text(
-                                '53', // Replace with dynamic value
+                                '$_numberOfRides', // Replace with dynamic value
                                 style: const TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
@@ -313,15 +336,15 @@ class _HomePageState extends State<HomePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
+                              const Text(
                                 'Commission',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
                                 ),
                               ),
                               Text(
-                                'LKR 12750', // Replace with dynamic value
+                                'LKR ${_commission.toStringAsFixed(2)}', // Replace with dynamic value
                                 style: const TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
@@ -344,12 +367,12 @@ class _HomePageState extends State<HomePage> {
                         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return const Center(child: Text('No ride requests found'));
                         } else {
-                          final List<DocumentSnapshot> rides = snapshot.data!.docs;
+                          _rides = snapshot.data!.docs;
 
                           return ListView.builder(
-                            itemCount: rides.length,
+                            itemCount: _rides.length,
                             itemBuilder: (context, index) {
-                              final DocumentSnapshot rideRequest = rides[index];
+                              final DocumentSnapshot rideRequest = _rides[index];
 
                               return GestureDetector(
                                 onTap: () => _showRideDetails(context, rideRequest),

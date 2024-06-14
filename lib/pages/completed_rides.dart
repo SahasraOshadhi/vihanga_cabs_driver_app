@@ -53,8 +53,8 @@ class _CompletedRidesState extends State<CompletedRides> {
     if (user != null) {
       return FirebaseFirestore.instance
           .collection('ride_requests')
-          .where('assignedDriver', isEqualTo: user.uid)
-          .where('completedByDriver', isEqualTo: 'yes')
+          .where('assignedDriver', isEqualTo: widget.driverId)
+          .where('rideCompletedByUser', isEqualTo: 'yes')
           .snapshots();
     } else {
       print('User is not logged in.');

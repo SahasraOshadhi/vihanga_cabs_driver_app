@@ -60,9 +60,9 @@ class _HomePageState extends State<HomePage> {
     if (user != null) {
       return FirebaseFirestore.instance
           .collection('ride_requests')
-          .where('assignedDriver', isEqualTo: widget.driverId)
+          .where('assignedDriver', isEqualTo: user.uid)
           .where('assigned', isEqualTo: 'yes')
-          .where('acceptedByDriver', isEqualTo: 'no')
+          .where('acceptedByDriver', isEqualTo: 'notyet')
           .snapshots();
     } else {
       print('User is not logged in.');

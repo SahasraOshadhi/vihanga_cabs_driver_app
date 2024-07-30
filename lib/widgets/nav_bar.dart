@@ -65,7 +65,7 @@ class NavBar extends StatelessWidget {
             stream: FirebaseFirestore.instance
                 .collection('ride_requests')
                 .where('assignedDriver', isEqualTo: driverId)
-                .where('acceptedByDriver', isEqualTo: 'no')
+                .where('acceptedByDriver', isEqualTo: 'notyet')
                 .snapshots(),
             builder: (context, snapshot) {
               int requestCount = 0;
